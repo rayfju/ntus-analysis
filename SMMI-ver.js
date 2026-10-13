@@ -1,3 +1,9 @@
+// 全域共用的色彩調色盤（確保各個圖表之間的工作表顏色完全對應）
+const globalColorPalette = [
+    '#2563eb', '#dc2626', '#16a34a', '#9333ea', '#d97706', '#0891b2', 
+    '#db2777', '#65a30d', '#7c3aed', '#ea580c', '#0d9488', '#4f46e5'
+];
+
 function runSmmiAnalysis(workbook) {
     const wrapper = document.getElementById('chartsWrapper');
     wrapper.innerHTML = '';
@@ -7,8 +13,15 @@ function runSmmiAnalysis(workbook) {
     let allGlobalX = [];
     let allGlobalY = [];
     let allGlobalNames = [];
+    let allGlobalSheetNames = []; // 記錄每個點所屬的工作表名稱，供全體總合圖上色用
 
-    // 迴圈遍歷 Excel 中的每一個分頁 (Worksheet)
+    // 建立工作表名稱與顏色的對應表
+    let sheetColorMap = {};
+    workbook.SheetNames.forEach((sheetName, index) => {
+        sheetColorMap[sheetName] = globalColorPalette[index % globalColorPalette.length];
+    });
+
+    // 1. 迴圈遍歷 Excel 中的每一個分頁
     for (let sheetName of workbook.SheetNames) {
         const worksheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
@@ -18,7 +31,6 @@ function runSmmiAnalysis(workbook) {
         let nameCol = -1;
         let headerRowIdx = -1;
 
-        // 1. 全域掃描所有儲存格，只要找到這三個欄位名稱即可（不限於同一列）
         for (let r = 0; r < rows.length; r++) {
             const row = rows[r];
             if (!row || row.length === 0) continue;
@@ -39,12 +51,10 @@ function runSmmiAnalysis(workbook) {
             }
         }
 
-        // 2. 如果成功找到了 SMMI 與 垂直跳高度(m) 的欄位座標
         if (smmiCol !== -1 && jumpCol !== -1) {
             const xArray = [];
             const yArray = [];
             const nameArray = [];
-
             const startRow = headerRowIdx !== -1 ? headerRowIdx + 1 : 0;
 
             for (let dataRowIdx = startRow; dataRowIdx < rows.length; dataRowIdx++) {
@@ -57,12 +67,9 @@ function runSmmiAnalysis(workbook) {
                 let nameVal = `受試者 ${dataRowIdx}`;
                 if (nameCol !== -1 && dataRow[nameCol] !== null && dataRow[nameCol] !== undefined) {
                     const trimmedName = String(dataRow[nameCol]).trim();
-                    if (trimmedName !== "") {
-                        nameVal = trimmedName;
-                    }
+                    if (trimmedName !== "") nameVal = trimmedName;
                 }
 
-                // 條件過濾：若數值為 NaN、等於 0 或缺失/空白，則不列入計算
                 if (
                     !isNaN(xVal) && !isNaN(yVal) &&
                     xVal !== 0 && yVal !== 0 &&
@@ -76,13 +83,13 @@ function runSmmiAnalysis(workbook) {
                     allGlobalX.push(xVal);
                     allGlobalY.push(yVal);
                     allGlobalNames.push(`[${sheetName}] ${nameVal}`);
+                    allGlobalSheetNames.push(sheetName); // 收集分頁歸屬
                 }
             }
 
             if (xArray.length > 2) {
                 successCount++;
                 
-                // 建立各別工作表的獨立分析圖表區塊
                 const section = document.createElement('div');
                 section.className = "bg-white p-4 rounded-lg border border-gray-200 shadow-sm";
                 
@@ -96,17 +103,16 @@ function runSmmiAnalysis(workbook) {
                 chartDiv.id = chartId;
                 chartDiv.className = "w-full h-[450px]";
                 section.appendChild(chartDiv);
-
                 wrapper.appendChild(section);
 
-                // 繪製該工作表的獨立圖表（含散佈點、回歸線、95% 信賴區間、滑鼠懸停顯示姓名）
-                drawIndividualChart(chartId, sheetName, xArray, yArray, nameArray);
+                // 個別圖表使用該工作表專屬的對應顏色
+                drawIndividualChart(chartId, sheetName, xArray, yArray, nameArray, sheetColorMap[sheetName]);
 
-                // 收集資料供最下方的多線疊加趨勢圖使用
                 allSheetsData.push({
                     sheetName: sheetName,
                     x: xArray,
-                    y: yArray
+                    y: yArray,
+                    color: sheetColorMap[sheetName]
                 });
             }
         }
@@ -117,7 +123,7 @@ function runSmmiAnalysis(workbook) {
         return;
     }
 
-    // 3. 在最下方新增：【各工作表迴歸趨勢線多線疊加比較圖】
+    // 2. 各工作表迴歸趨勢線多線疊加比較圖（顏色與對應表一致）
     if (allSheetsData.length > 0) {
         const trendSection = document.createElement('div');
         trendSection.className = "bg-gray-50 p-6 rounded-lg border-2 border-gray-300 shadow-md mt-10";
@@ -136,13 +142,12 @@ function runSmmiAnalysis(workbook) {
         trendChartDiv.id = trendChartId;
         trendChartDiv.className = "w-full h-[500px] bg-white rounded-lg p-2";
         trendSection.appendChild(trendChartDiv);
-
         wrapper.appendChild(trendSection);
 
         drawMultiTrendChart(trendChartId, allSheetsData);
     }
 
-    // 4. 同時保留最底下的【全體總合比較分析圖】
+    // 3. 全體總合比較分析圖（點點依照所屬工作表呈現對應顏色）
     if (allGlobalX.length > 2) {
         const globalSectionDiv = document.createElement('div');
         globalSectionDiv.className = "bg-indigo-50 p-6 rounded-lg border-2 border-indigo-200 shadow-md mt-6";
@@ -161,22 +166,20 @@ function runSmmiAnalysis(workbook) {
         globalChartDiv.id = globalChartId;
         globalChartDiv.className = "w-full h-[500px] bg-white rounded-lg p-2";
         globalSectionDiv.appendChild(globalChartDiv);
-
         wrapper.appendChild(globalSectionDiv);
 
-        drawIndividualChart(globalChartId, "全體總合比較分析", allGlobalX, allGlobalY, allGlobalNames, '#4f46e5');
+        // 呼叫專門繪製多色彩總合圖的函數
+        drawGlobalMultiColorChart(globalChartId, "全體總合比較分析", allGlobalX, allGlobalY, allGlobalNames, allGlobalSheetNames, sheetColorMap);
     }
 }
 
-// 繪製獨立圖表（含回歸線、95% 信賴區間、滑鼠懸停顯示姓名與垂直跳高度(m)）
+// 繪製獨立圖表（單一工作表）
 function drawIndividualChart(containerId, titleText, x, y, names, markerColor = 'royalblue') {
     const n = x.length;
-    
     const meanX = x.reduce((a, b) => a + b, 0) / n;
     const meanY = y.reduce((a, b) => a + b, 0) / n;
     
-    let ssXX = 0;
-    let ssXY = 0;
+    let ssXX = 0, ssXY = 0;
     for (let i = 0; i < n; i++) {
         ssXX += Math.pow(x[i] - meanX, 2);
         ssXY += (x[i] - meanX) * (y[i] - meanY);
@@ -197,68 +200,26 @@ function drawIndividualChart(containerId, titleText, x, y, names, markerColor = 
     const numPoints = 100;
     const step = (maxX - minX) / (numPoints - 1);
     
-    const xLine = [];
-    const yUpper = [];
-    const yLower = [];
-    const yFit = [];
+    const xLine = [], yUpper = [], yLower = [], yFit = [];
     const tVal = 1.96; 
 
     for (let i = 0; i < numPoints; i++) {
         const xi = minX + i * step;
         xLine.push(xi);
-        
         const yi = slope * xi + intercept;
         yFit.push(yi);
-
         const se = s * Math.sqrt((1 / n) + Math.pow(xi - meanX, 2) / ssXX);
         yUpper.push(yi + tVal * se);
         yLower.push(yi - tVal * se);
     }
 
-    const ciTraceUpper = {
-        x: xLine,
-        y: yUpper,
-        mode: 'lines',
-        type: 'scatter',
-        line: { color: 'transparent' },
-        showlegend: false,
-        hoverinfo: 'skip'
-    };
-
-    const ciTraceLower = {
-        x: xLine,
-        y: yLower,
-        mode: 'lines',
-        type: 'scatter',
-        fill: 'tonexty',
-        fillcolor: markerColor === '#4f46e5' ? 'rgba(79, 70, 229, 0.15)' : 'rgba(37, 99, 235, 0.15)',
-        line: { color: 'transparent' },
-        name: '95% 信賴區間',
-        hoverinfo: 'skip'
-    };
-
-    const regLine = {
-        x: xLine,
-        y: yFit,
-        mode: 'lines',
-        type: 'scatter',
-        name: '線性回歸線',
-        line: { color: markerColor === '#4f46e5' ? '#312e81' : 'crimson', width: 2.5 }
-    };
-
-    const scatterTrace = {
-        x: x,
-        y: y,
-        text: names,
-        mode: 'markers',
-        type: 'scatter',
-        name: '受試者數據',
-        marker: { color: markerColor, size: 9, opacity: 0.75 },
-        hoovertemplate: '<b>%{text}</b><br>SMMI: %{x}<br>垂直跳高度(m): %{y}<extra></extra>'
-    };
+    const ciTraceUpper = { x: xLine, y: yUpper, mode: 'lines', type: 'scatter', line: { color: 'transparent' }, showlegend: false, hoverinfo: 'skip' };
+    const ciTraceLower = { x: xLine, y: yLower, mode: 'lines', type: 'scatter', fill: 'tonexty', fillcolor: 'rgba(37, 99, 235, 0.15)', line: { color: 'transparent' }, name: '95% 信賴區間', hoverinfo: 'skip' };
+    const regLine = { x: xLine, y: yFit, mode: 'lines', type: 'scatter', name: '線性回歸線', line: { color: 'crimson', width: 2.5 } };
+    const scatterTrace = { x: x, y: y, text: names, mode: 'markers', type: 'scatter', name: '受試者數據', marker: { color: markerColor, size: 9, opacity: 0.75 }, hoovertemplate: '<b>%{text}</b><br>SMMI: %{x}<br>垂直跳高度(m): %{y}<extra></extra>' };
 
     const layout = {
-        title: { text: titleText.includes('工作表') ? `工作表：${titleText} (SMMI vs 垂直跳高度(m))` : titleText, font: { size: 16 } },
+        title: { text: `工作表：${titleText} (SMMI vs 垂直跳高度(m))`, font: { size: 16 } },
         xaxis: { title: 'SMMI', zeroline: false },
         yaxis: { title: '垂直跳高度(m)', zeroline: false },
         hovermode: 'closest',
@@ -271,20 +232,18 @@ function drawIndividualChart(containerId, titleText, x, y, names, markerColor = 
 // 繪製多線疊加趨勢圖
 function drawMultiTrendChart(containerId, allSheetsData) {
     let plotData = [];
-    const colorPalette = ['#2563eb', '#dc2626', '#16a34a', '#9333ea', '#d97706', '#0891b2'];
 
-    allSheetsData.forEach((sheet, index) => {
-        const color = colorPalette[index % colorPalette.length];
+    allSheetsData.forEach((sheet) => {
         const x = sheet.x;
         const y = sheet.y;
         const sheetName = sheet.sheetName;
+        const color = sheet.color;
         const n = x.length;
 
         const meanX = x.reduce((a, b) => a + b, 0) / n;
         const meanY = y.reduce((a, b) => a + b, 0) / n;
         
-        let ssXX = 0;
-        let ssXY = 0;
+        let ssXX = 0, ssXY = 0;
         for (let i = 0; i < n; i++) {
             ssXX += Math.pow(x[i] - meanX, 2);
             ssXY += (x[i] - meanX) * (y[i] - meanY);
@@ -312,7 +271,88 @@ function drawMultiTrendChart(containerId, allSheetsData) {
         yaxis: { title: '垂直跳高度(m)', zeroline: false },
         hovermode: 'closest',
         margin: { t: 40, b: 40, l: 60, r: 20 },
-        legend: { orientation: 'h', y: -0.25 }
+        legend: { orientation: 'h', y: -0.3 }
+    };
+
+    Plotly.newPlot(containerId, plotData, layout, {responsive: true});
+}
+
+// 繪製全體總合比較分析圖（各資料點依據所屬工作表顯示對應顏色）
+function drawGlobalMultiColorChart(containerId, titleText, x, y, names, sheetNames, sheetColorMap) {
+    // 依照不同工作表將數據分組，讓圖例 (Legend) 可以正確呈現各學校名稱與對應顏色
+    let tracesMap = {};
+
+    for (let i = 0; i < x.length; i++) {
+        let sName = sheetNames[i];
+        if (!tracesMap[sName]) {
+            tracesMap[sName] = {
+                x: [],
+                y: [],
+                text: [],
+                mode: 'markers',
+                type: 'scatter',
+                name: sName,
+                marker: { color: sheetColorMap[sName] || '#2563eb', size: 8, opacity: 0.8 },
+                hoovertemplate: '<b>%{text}</b><br>SMMI: %{x}<br>垂直跳高度(m): %{y}<extra></extra>'
+            };
+        }
+        tracesMap[sName].x.push(x[i]);
+        tracesMap[sName].y.push(y[i]);
+        tracesMap[sName].text.push(names[i]);
+    }
+
+    let plotData = Object.values(tracesMap);
+
+    // 同時計算全體總合的全域迴歸線與 95% 信賴區間
+    const n = x.length;
+    const meanX = x.reduce((a, b) => a + b, 0) / n;
+    const meanY = y.reduce((a, b) => a + b, 0) / n;
+    let ssXX = 0, ssXY = 0;
+    for (let i = 0; i < n; i++) {
+        ssXX += Math.pow(x[i] - meanX, 2);
+        ssXY += (x[i] - meanX) * (y[i] - meanY);
+    }
+    const slope = ssXY / ssXX;
+    const intercept = meanY - slope * meanX;
+
+    let sse = 0;
+    for (let i = 0; i < n; i++) {
+        const yPred = slope * x[i] + intercept;
+        sse += Math.pow(y[i] - yPred, 2);
+    }
+    const s = Math.sqrt(sse / (n - 2));
+
+    const minX = Math.min(...x);
+    const maxX = Math.max(...x);
+    const numPoints = 100;
+    const step = (maxX - minX) / (numPoints - 1);
+    const xLine = [], yUpper = [], yLower = [], yFit = [];
+    const tVal = 1.96;
+
+    for (let i = 0; i < numPoints; i++) {
+        const xi = minX + i * step;
+        xLine.push(xi);
+        const yi = slope * xi + intercept;
+        yFit.push(yi);
+        const se = s * Math.sqrt((1 / n) + Math.pow(xi - meanX, 2) / ssXX);
+        yUpper.push(yi + tVal * se);
+        yLower.push(yi - tVal * se);
+    }
+
+    const ciTraceUpper = { x: xLine, y: yUpper, mode: 'lines', type: 'scatter', line: { color: 'transparent' }, showlegend: false, hoverinfo: 'skip' };
+    const ciTraceLower = { x: xLine, y: yLower, mode: 'lines', type: 'scatter', fill: 'tonexty', fillcolor: 'rgba(79, 70, 229, 0.12)', line: { color: 'transparent' }, name: '95% 信賴區間', hoverinfo: 'skip' };
+    const regLine = { x: xLine, y: yFit, mode: 'lines', type: 'scatter', name: '全體線性回歸線', line: { color: '#312e81', width: 2.5 } };
+
+    // 將信賴區間、回歸線與各學校分組點點結合
+    plotData.push(ciTraceUpper, ciTraceLower, regLine);
+
+    const layout = {
+        title: { text: titleText, font: { size: 16 } },
+        xaxis: { title: 'SMMI', zeroline: false },
+        yaxis: { title: '垂直跳高度(m)', zeroline: false },
+        hovermode: 'closest',
+        margin: { t: 40, b: 40, l: 60, r: 20 },
+        legend: { orientation: 'h', y: -0.35 }
     };
 
     Plotly.newPlot(containerId, plotData, layout, {responsive: true});
