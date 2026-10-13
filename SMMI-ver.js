@@ -130,11 +130,12 @@ function runSmmiAnalysis(workbook) {
         
         const trendTitle = document.createElement('h2');
         trendTitle.className = "text-xl font-bold text-gray-800 mb-2 border-b border-gray-300 pb-2";
-        trendTitle.textContent = `各工作表迴歸趨勢線多線疊加比較`;
+        trendTitle.textContent = `📈 各工作表迴歸趨勢線多線疊加比較`;
         trendSection.appendChild(trendTitle);
 
         const trendDesc = document.createElement('p');
         trendDesc.className = "text-sm text-gray-600 mb-4";
+        trendDesc.textContent = "此圖表將所有工作表的線性回歸趨勢線以多線疊加方式呈現於同一張圖中，顏色與各工作表完全對應。";
         trendSection.appendChild(trendDesc);
 
         const trendChartDiv = document.createElement('div');
@@ -154,11 +155,12 @@ function runSmmiAnalysis(workbook) {
         
         const globalTitle = document.createElement('h2');
         globalTitle.className = "text-xl font-bold text-indigo-900 mb-2 border-b border-indigo-200 pb-2";
-        globalTitle.textContent = `全體總合比較分析 (所有工作表合併, 總有效樣本數: ${allGlobalX.length})`;
+        globalTitle.textContent = `📊 全體總合比較分析 (所有工作表合併, 總有效樣本數: ${allGlobalX.length})`;
         globalSectionDiv.appendChild(globalTitle);
 
         const globalDesc = document.createElement('p');
         globalDesc.className = "text-sm text-indigo-700 mb-4";
+        globalDesc.textContent = "此圖表將所有工作表的有效數據合併，且各資料點顏色會自動對應上方多線疊加圖中各學校（工作表）的專屬顏色。";
         globalSectionDiv.appendChild(globalDesc);
 
         const globalChartDiv = document.createElement('div');

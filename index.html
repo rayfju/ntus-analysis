@@ -1,128 +1,63 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>運動數據分析平台</title>
-    <!-- 引入 Tailwind CSS 進行 RWD 響應式排版 -->
+    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Plotly.js 繪圖庫 -->
+    <!-- 引入 SheetJS (解析 Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- 引入 Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-    <!-- 引入 SheetJS (xlsx) 用於解析 Excel 檔案 -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col font-sans antialiased">
+<body class="bg-gray-50 min-h-screen py-10 px-4">
 
-    <!-- 頂部導覽列：RWD 自適應排列 (手機垂直堆疊、平板以上橫向並排) -->
-    <header class="bg-gray-900 border-b border-gray-800 sticky top-0 z-50 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            
-            <!-- 標題 -->
-            <div class="flex items-center space-x-3">
-                <div>
-                    <h1 class="text-lg sm:text-xl font-bold tracking-wide text-white">運動數據分析平台</h1>
-                </div>
-            </div>
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6 md:p-8">
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">運動數據智慧分析平台</h1>
+        <p class="text-gray-600 mb-6">請先上傳您的 Excel 檔案，並透過下方選單切換分析模組。</p>
 
-            <!-- 檔案上傳與模式切換控制器 -->
-            <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
-                <!-- 上傳 Excel 按鈕 -->
-                <label class="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm flex items-center gap-2">
-                    <span>📁 選擇 Excel</span>
-                    <input type="file" id="excelFile" class="hidden"> <!-- 移除 accept 限制 -->
-                </label>
-
-                <!-- 分析模式切換選單 -->
-                <select id="modeSelector" class="bg-gray-800 text-gray-200 border border-gray-700 text-xs sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="smmi">模式 1：SMMI 迴歸分析</option>
-                    <option value="stats">模式 2：各項數據分析 (直方圖+常態曲線)</option>
-                </select>
-
-                <!-- 工作表切換選單 (動態顯示) -->
-                <div id="sheetSelectorWrapper" class="hidden flex items-center gap-2">
-                    <span class="text-xs text-gray-400">分頁:</span>
-                    <select id="sheetSelector" class="bg-gray-800 text-gray-200 border border-gray-700 text-xs sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </select>
-                </div>
-            </div>
-
+        <!-- 檔案上傳區塊 -->
+        <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-700">選擇 Excel 檔案 (.xlsx, .xls)</label>
+            <input type="file" id="excelFile" accept=".xlsx, .xls" 
+                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-300 rounded-md">
         </div>
-    </header>
 
-    <!-- 主要內容顯示區域：RWD 彈性容器，支援多欄網格與獨立黑色卡片流暢向下延伸 -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- 下拉式選單：選擇分析模式 -->
+        <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-700">選擇分析模式</label>
+            <select id="analysisMode" class="block w-full p-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                <option value="smmi">SMMI 垂直跳分析</option>
+                <option value="stats">各項數據分析 (平均數與標準差)</option>
+            </select>
+        </div>
+
+        <!-- 下拉式選單：選擇工作表 (專供「各項數據分析」模式使用，平時隱藏) -->
+        <div id="sheetSelectorWrapper" class="mb-6 hidden">
+            <label class="block mb-2 text-sm font-medium text-gray-700">選擇要檢視的工作表 (Sheet)</label>
+            <select id="sheetSelector" class="block w-full p-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                <!-- 動態載入 -->
+            </select>
+        </div>
+
+        <!-- 錯誤訊息提示 -->
+        <div id="errorMessage" class="hidden mb-4 p-4 text-sm text-red-700 bg-red-100 rounded-md"></div>
+
+        <!-- 內容顯示區域 -->
+        <!-- 內容顯示區域：已固定版面大小，內部圖表若過多可上下滾動，絕不超過此區塊範圍 -->
+        <!-- 內容顯示區域：已將高度放大，避免圖表擁擠或重疊，內部可順暢上下捲動 -->
+        <!-- 內容顯示區域：拿掉固定大小外框，改為自動向下延伸排列 -->
         <div id="chartsWrapper" class="space-y-6">
-            <!-- 初始提示區塊 -->
-            <div class="w-full h-[350px] bg-gray-900 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center p-6 shadow-xl">
-                <div class="text-4xl mb-3">📂</div>
-                <h3 class="text-base sm:text-lg font-semibold text-gray-300">尚未上傳資料</h3>
-                <p class="text-xs sm:text-sm text-gray-500 mt-1 max-w-md">請點擊上方「選擇 Excel」按鈕上傳數據檔案</p>
+            <div class="w-full h-[300px] bg-gray-900 rounded-xl border border-gray-800 flex items-center justify-center text-gray-400">
+                尚未上傳資料，請先選擇 Excel 檔案與分析模式
             </div>
         </div>
-    </main>
+    </div>
 
-    <!-- 頁尾 -->
-    <footer class="bg-gray-900 border-t border-gray-800 py-4 text-center text-xs text-gray-500">
-        Sports Analytics Dashboard &copy; 2026 | Responsive Design Enabled
-    </footer>
-
-    <!-- 載入對應的 JS 控制器邏輯 -->
-    <script src="smmi-ver.js"></script>
+    <!-- 引入對應的 JS 模組 (請確認檔名是否為你的 SMMI 檔名) -->
+    <script src="SMMI-ver.js"></script>
     <script src="average.js"></script>
-    <script>
-        // 全域初始化與檔案監聽主程式
-        let globalWorkbook = null;
-
-        document.getElementById('excelFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onerror = function(err) {
-                console.error("FileReader 錯誤:", err);
-                alert("手機讀取檔案失敗，可能原因：記憶體不足或瀏覽器權限受限。");
-            };
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    globalWorkbook = XLSX.read(data, { type: 'array' });
-                    
-                    // 根據目前選定的模式觸發對應的分析函式
-                    triggerActiveMode();
-                } catch (err) {
-                    console.error(err);
-                    alert('讀取檔案發生錯誤，請確認是否為有效的 Excel 檔案。');
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        document.getElementById('modeSelector').addEventListener('change', function() {
-            if (globalWorkbook) {
-                triggerActiveMode();
-            } else {
-                const wrapper = document.getElementById('chartsWrapper');
-                wrapper.innerHTML = `
-                    <div class="w-full h-[350px] bg-gray-900 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center p-6 shadow-xl">
-                        <div class="text-4xl mb-3">📂</div>
-                        <h3 class="text-base sm:text-lg font-semibold text-gray-300">尚未上傳資料</h3>
-                        <p class="text-xs sm:text-sm text-gray-500 mt-1 max-w-md">請先上傳 Excel 檔案以啟用分析模式。</p>
-                    </div>
-                `;
-            }
-        });
-
-        function triggerActiveMode() {
-            const mode = document.getElementById('modeSelector').value;
-            const sheetSelectorWrapper = document.getElementById('sheetSelectorWrapper');
-            
-            if (mode === 'smmi') {
-                sheetSelectorWrapper.classList.add('hidden');
-                runSmmiAnalysis(globalWorkbook);
-            } else if (mode === 'stats') {
-                runStatsAnalysis(globalWorkbook);
-            }
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
