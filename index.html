@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多工作表 SMMI 與垂直跳高度相關性分析</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 SheetJS (解析 Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- 引入 Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen py-10 px-4">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6 md:p-8">
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">多工作表 SMMI 與垂直跳高度分析</h1>
+        <p class="text-gray-600 mb-6">請上傳您的 Excel 檔案，系統將自動掃描**所有工作表**，並為每一個含有 <code class="bg-gray-100 px-2 py-1 rounded text-red-500 font-semibold">SMMI</code> 與 <code class="bg-gray-100 px-2 py-1 rounded text-red-500 font-semibold">垂直跳高度</code> 的工作表分別繪製獨立圖表。</p>
+
+        <!-- 檔案上傳區塊 -->
+        <div class="mb-6">
+            <label class="block mb-2 text-sm font-medium text-gray-700">選擇 Excel 檔案 (.xlsx, .xls)</label>
+            <input type="file" id="excelFile" accept=".xlsx, .xls" 
+                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-300 rounded-md">
+        </div>
+
+        <!-- 錯誤訊息提示 -->
+        <div id="errorMessage" class="hidden mb-4 p-4 text-sm text-red-700 bg-red-100 rounded-md"></div>
+
+        <!-- 圖表動態生成容器 -->
+        <div id="chartsWrapper" class="space-y-8">
+            <div class="w-full h-[400px] bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                <p class="text-gray-400">尚未上傳資料，請先選擇 Excel 檔案</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入獨立的 JavaScript 邏輯檔 -->
+    <script src="analysis.js"></script>
+</body>
+</html>
