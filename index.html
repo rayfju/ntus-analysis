@@ -78,6 +78,10 @@
             if (!file) return;
 
             const reader = new FileReader();
+            reader.onerror = function(err) {
+                console.error("FileReader 錯誤:", err);
+                alert("手機讀取檔案失敗，可能原因：記憶體不足或瀏覽器權限受限。");
+            };
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
