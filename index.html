@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多工作表 SMMI 與垂直跳高度相關性分析</title>
+    <title>運動數據分析平台</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 SheetJS (解析 Excel) -->
@@ -14,28 +14,50 @@
 <body class="bg-gray-50 min-h-screen py-10 px-4">
 
     <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6 md:p-8">
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">多工作表 SMMI 與垂直跳高度分析</h1>
-        <p class="text-gray-600 mb-6">請上傳您的 Excel 檔案，系統將自動掃描**所有工作表**，並為每一個含有 <code class="bg-gray-100 px-2 py-1 rounded text-red-500 font-semibold">SMMI</code> 與 <code class="bg-gray-100 px-2 py-1 rounded text-red-500 font-semibold">垂直跳高度</code> 的工作表分別繪製獨立圖表。</p>
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">運動數據智慧分析平台</h1>
+        <p class="text-gray-600 mb-6">請先上傳您的 Excel 檔案，並透過下方選單切換分析模組。</p>
 
         <!-- 檔案上傳區塊 -->
-        <div class="mb-6">
+        <div class="mb-4">
             <label class="block mb-2 text-sm font-medium text-gray-700">選擇 Excel 檔案 (.xlsx, .xls)</label>
             <input type="file" id="excelFile" accept=".xlsx, .xls" 
                 class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-300 rounded-md">
         </div>
 
+        <!-- 下拉式選單：選擇分析模式 -->
+        <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-700">選擇分析模式</label>
+            <select id="analysisMode" class="block w-full p-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                <option value="smmi">SMMI 垂直跳分析</option>
+                <option value="stats">各項數據分析 (平均數與標準差)</option>
+            </select>
+        </div>
+
+        <!-- 下拉式選單：選擇工作表 (專供「各項數據分析」模式使用，平時隱藏) -->
+        <div id="sheetSelectorWrapper" class="mb-6 hidden">
+            <label class="block mb-2 text-sm font-medium text-gray-700">選擇要檢視的工作表 (Sheet)</label>
+            <select id="sheetSelector" class="block w-full p-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                <!-- 動態載入 -->
+            </select>
+        </div>
+
         <!-- 錯誤訊息提示 -->
         <div id="errorMessage" class="hidden mb-4 p-4 text-sm text-red-700 bg-red-100 rounded-md"></div>
 
-        <!-- 圖表動態生成容器 -->
-        <div id="chartsWrapper" class="space-y-8">
-            <div class="w-full h-[400px] bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-                <p class="text-gray-400">尚未上傳資料，請先選擇 Excel 檔案</p>
+        <!-- 內容顯示區域 -->
+        <!-- 內容顯示區域：已固定版面大小，內部圖表若過多可上下滾動，絕不超過此區塊範圍 -->
+        <!-- 內容顯示區域：已將高度放大，避免圖表擁擠或重疊，內部可順暢上下捲動 -->
+        <!-- 內容顯示區域：拿掉固定大小外框，改為自動向下延伸排列 -->
+        <div id="chartsWrapper" class="space-y-6">
+            <div class="w-full h-[300px] bg-gray-900 rounded-xl border border-gray-800 flex items-center justify-center text-gray-400">
+                尚未上傳資料，請先選擇 Excel 檔案與分析模式
             </div>
         </div>
     </div>
 
-    <!-- 引入獨立的 JavaScript 邏輯檔 -->
-    <script src="analysis.js"></script>
+    <!-- 引入對應的 JS 模組 (請確認檔名是否為你的 SMMI 檔名) -->
+    <script src="SMMI-ver.js"></script>
+    <script src="average.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
