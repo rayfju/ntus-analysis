@@ -30,13 +30,31 @@
             <select id="analysisMode" class="block w-full p-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
                 <option value="smmi">SMMI 垂直跳分析</option>
                 <option value="stats">各項數據分析 (平均數與標準差)</option>
+                <option value="radar">國三生正五角形分析圖</option>
+                <option value="g_strength">握力與SMMI分析圖</option>
             </select>
         </div>
 
-        <!-- 下拉式選單：選擇工作表 (專供「各項數據分析」模式使用，平時隱藏) -->
+        <!-- 下拉式選單：選擇工作表 (專供「各項數據分析」使用，平時隱藏) -->
         <div id="sheetSelectorWrapper" class="mb-6 hidden">
             <label class="block mb-2 text-sm font-medium text-gray-700">選擇要檢視的工作表 (Sheet)</label>
             <select id="sheetSelector" class="block w-full p-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                <!-- 動態載入 -->
+            </select>
+        </div>
+
+        <!-- 下拉式選單：選擇年級 (專供正五角形與握力SMMI模式使用，平時隱藏) -->
+        <div id="gradeSelectorWrapper" class="mb-6 hidden">
+            <label class="block mb-2 text-sm font-medium text-gray-700">選擇要檢視的年級</label>
+            <select id="gradeSelector" class="block w-full p-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                <!-- 動態載入 -->
+            </select>
+        </div>
+
+        <!-- 下拉式選單：選擇學校 (專供正五角形與握力SMMI模式使用，平時隱藏) -->
+        <div id="schoolSelectorWrapper" class="mb-6 hidden">
+            <label class="block mb-2 text-sm font-medium text-gray-700">選擇要檢視的學校 (預設：全體學校)</label>
+            <select id="schoolSelector" class="block w-full p-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
                 <!-- 動態載入 -->
             </select>
         </div>
@@ -45,9 +63,6 @@
         <div id="errorMessage" class="hidden mb-4 p-4 text-sm text-red-700 bg-red-100 rounded-md"></div>
 
         <!-- 內容顯示區域 -->
-        <!-- 內容顯示區域：已固定版面大小，內部圖表若過多可上下滾動，絕不超過此區塊範圍 -->
-        <!-- 內容顯示區域：已將高度放大，避免圖表擁擠或重疊，內部可順暢上下捲動 -->
-        <!-- 內容顯示區域：拿掉固定大小外框，改為自動向下延伸排列 -->
         <div id="chartsWrapper" class="space-y-6">
             <div class="w-full h-[300px] bg-gray-900 rounded-xl border border-gray-800 flex items-center justify-center text-gray-400">
                 尚未上傳資料，請先選擇 Excel 檔案與分析模式
@@ -55,9 +70,11 @@
         </div>
     </div>
 
-    <!-- 引入對應的 JS 模組 (請確認檔名是否為你的 SMMI 檔名) -->
+    <!-- 引入對應的 JS 模組 -->
     <script src="SMMI-ver.js"></script>
     <script src="average.js"></script>
     <script src="script.js"></script>
+    <script src="radar.js?v=2.0"></script>
+    <script src="g_strength.js"></script>
 </body>
 </html>
